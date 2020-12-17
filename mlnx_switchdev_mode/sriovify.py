@@ -334,6 +334,25 @@ def switch(werror=False, rebind=False):
                     unbound_vfs = []
                     try:
                         unbound_vfs = unbind_vfs(pcidev.vfs)
+                        # XXX doing a reload when system is up with interfaces
+                        # bound etc causes all kinds of havoc, so we need to do
+                        # this as part of system initialization somehow.
+                        #
+                        # Not sure if this script is the right place but let's
+                        # stash it here for noew.
+                        #
+                        # TODO(fnordahl): If we want to keep it here, make the
+                        # value configurable from command line etc.
+                        subprocess.check_call([
+                            'devlink', 'dev', 'param', 'set',
+                            'pci/{}'.format(pci_addr), 'name',
+                            'fdb_large_groups', 'cmode',
+                            'driverinit', 'value', '63',
+                        ])
+                        subprocess.check_call([
+                            'devlink', 'dev', 'reload',
+                            'pci/{}'.format(pci_addr),
+                        ])
                         pcidev.devlink_set("eswitch", "mode", "switchdev")
                     finally:
                         if rebind:
